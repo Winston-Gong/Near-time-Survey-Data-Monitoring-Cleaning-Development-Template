@@ -1,0 +1,21 @@
+***Data_validation_Form3&4 ****
+Warning: Form 3 data are not clean and have duplicated Child_ID
+
+Duplicates in terms of f3_a0_2surveychildid
+
+  +-----------------+
+  | obs:   f3_a0_~d |
+  |-----------------|
+  |    7      46065 |
+  |    8      46065 |
+  +-----------------+
+(10 observations deleted)
+HH_ID      Visit_Num  FW_ID      Date       Child_ID
+(note: variable Date was str1, now str8 to accommodate using data's values)
+file Data_query\Query_history\querylist.dta saved
+
+end of do-file
+
+. do "code\Data_query_logging.do"
+
+. qui {

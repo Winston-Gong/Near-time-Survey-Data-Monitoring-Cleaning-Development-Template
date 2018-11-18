@@ -1,0 +1,15 @@
+***Data_cleaning_Form3***
+
+Duplicates in terms of f3_a0_1surveyhousecode
+
+(0 observations are duplicates)
+
+Duplicates in terms of f3_a0_2surveychildid
+
+(1 observation deleted)
+
+end of do-file
+
+. do "code\Data_validation_Form1&2.do"
+
+. qui {

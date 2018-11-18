@@ -1,0 +1,8 @@
+***Data_cleaning_Form1***
+
+end of do-file
+
+. //do "code\Data_correction_Form2.do"
+. do "code\Data_cleaning_Form2.do"
+
+. qui {

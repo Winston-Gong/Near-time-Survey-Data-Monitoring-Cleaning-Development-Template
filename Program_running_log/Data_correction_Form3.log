@@ -1,0 +1,14 @@
+***Data_correction_Form3***
+Form 3 Change request ID=1 PASS
+Form 3 Change request ID=2 PASS
+Form 3 Change request ID=3 PASS
+Form 3 Change request ID=4 PASS
+Form 3 Change request ID=5 PASS
+Form 3 Change request ID=6 PASS
+Form 3 Change request ID=7 PASS
+
+end of do-file
+
+. do "code\Data_cleaning_Form3.do"
+
+. qui {

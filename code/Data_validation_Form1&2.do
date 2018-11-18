@@ -1,21 +1,22 @@
 qui {
 /********************************************************
-* Last Modified:  03/16/16  by Wenfeng Gong
+* Last Modified:  11/14/18  by Wenfeng Gong
+* Project Name:   Near-time data inspection tool (template)
+* File Name:      Data_validation_Form1&2.do 
 ********************************************************/
 capture log c
 log using "Program_running_log\Data_validation_Form1&2.log", replace
 noi di "***Data_validation_Form1&2 ****"
 
+//***** create an empty query list (User DO NOT change) ************
 cap rm "Data_query\Query_history\querylist.dta"
-
-//create an empty query list
 use "$cleandata\Form1_clean.dta",clear 
 keep f1_0 f1_1_1 f1_1_3 f1_1_2 f1_1_4s
 drop if f1_0!=""
 gen Child_ID="."
 save "Data_query\Query_history\querylist.dta", replace
 
-//***** Preload programs ************
+//***** Preload programs (User DO NOT change) ************
 *the command to store Household ID for query generation
    capture program drop querylister
    program define querylister
@@ -33,7 +34,8 @@ save "Data_query\Query_history\querylist.dta", replace
    end
 //***** End preload programs ********
 
-//************ 
+
+//***** Define Checkpoints (User should change) ****
 //Checkpoint 1&2: duplicate HH ID due to correction
 use "$cleandata\Form1_clean.dta",clear 
 duplicates tag f1_0 f1_1_1, gen(dup)
@@ -85,7 +87,7 @@ drop _merge
 save "$tempdata\Form1&2_temp.dta", replace
 //***********************
 // add Child ID
-import excel using "Entered_data\Household & Child ID List from Form3.xlsx" ///
+import excel using "Program_running_log\Household & Child ID List from Form3.xlsx" ///
 			,clear firstrow allstring case(lower)
 drop f1_1_1 f1_1_3 f1_1_4s f1_1_2
 ren f3_a0_1 f1_0house_code
@@ -137,7 +139,7 @@ querylister, checkpoint("8")
 
 //***********************
 // Checkpoint 9 & 10 & 11:
-import excel using "Entered_data\Household & Child ID List from Form3.xlsx" ///
+import excel using "Program_running_log\Household & Child ID List from Form3.xlsx" ///
 			,clear firstrow allstring case(lower)
 drop f1_1_1 f1_1_3 f1_1_4s f1_1_2
 ren f3_a0_1 f1_0house_code
@@ -163,84 +165,6 @@ replace querytag=1 if (childageindays!=. & cgageinyear!=.) & inlist(f1_1_4status
 querylister, checkpoint("12")
 
 //***********************
-// Checkpoint 13 & 1301 & 14:
-use "Entered_data\Processed_log_data\Fieldwork_calendar.dta",clear
-cap drop Subdivision
-drop if !inlist(Method, "EPI", "CS", "GIS", "LQAS", "REVISIT")
-reshape long cluster, i(Date Teamnumber Method) j(index)
-drop if cluster=="."
-ren Method surveymethod
-replace surveymethod="1" if surveymethod=="EPI"
-replace surveymethod="2" if surveymethod=="CS"
-replace surveymethod="3" if surveymethod=="GIS"
-replace surveymethod="4" if surveymethod=="LQAS"
-replace surveymethod="0" if surveymethod=="REVISIT"
-destring surveymethod, replace
-ren cluster clusterid
-ren Round round
-ren Team team
-tempfile calendar
-	save `calendar'
-use "$tempdata\Form1&2_temp.dta", clear
-gen team=substr(f1_0,3,1)
-	destring team, replace
-mmerge round team surveymethod clusterid using `calendar', type(n:n) unmatched(both) uif(surveymethod!=0)
-sum Date
-local date_log=r(max)
-gen datenum=date(f1_1_2,"DM20Y")
-keep if datenum<=`date_log' | datenum==.
-gen querytag=0
-replace querytag=1 if _merge==1
-querylister, checkpoint("13")
-gen querytag=0
-replace querytag=1 if _merge==2
-decode surveymethod, gen(method)
-tostring round, gen(roundstr)
-replace f1_0=method + clusterid + "; Round" +roundstr + "; Date" +string(Date, "%td") if _merge==2
-querylister, checkpoint("1301")
-drop if f1_1_1!=1
-gen querytag=0
-replace querytag=1 if Date!=visitdate & Date!=visitdate-1 & Date!=visitdate-2 & Date!=.
-collapse (min) querytag, by(f1_0 f1_1_1 f1_1_3 f1_1_2 f1_1_4s)
-//duplicates tag f1_0, gen(dup)
-querylister, checkpoint("14")
-
-//***********************
-// Checkpoint 15 & 1501:
-use "Entered_data\Processed_log_data\Fieldwork_calendar.dta",clear
-cap drop Subdivision
-drop if !inlist(Method, "REVISIT")
-reshape long cluster, i(Date Teamnumber) j(index)
-ren Method surveymethod
-replace surveymethod="0" if surveymethod=="REVISIT"
-destring surveymethod, replace
-ren cluster clusterid
-ren Round round
-ren Team team
-tempfile calendar
-	save `calendar'
-use "$tempdata\Form1&2_temp.dta", clear
-gen team=substr(f1_0,3,1)
-	destring team, replace
-drop if f1_1_1==1
-ren visitdate Date
-mmerge Date team using `calendar', type(n:n) unmatched(both) uif(surveymethod==0)
-sum Date
-local date_log=r(max)
-gen datenum=date(f1_1_2,"DM20Y") 
-keep if datenum<=`date_log' | datenum==.
-gen querytag=0
-replace querytag=1 if _merge==1
-querylister, checkpoint("15")
-gen querytag=0
-tostring team, replace
-replace f1_0="Team" + team + "; Date:" + string(Date, "%td") if _merge==2
-replace querytag=1 if _merge==2
-drop index
-duplicates drop 
-querylister, checkpoint("1501")
-
-//***********************
 // Checkpoint 16:
 use "$tempdata\Form1&2_temp.dta", clear
 gen querytag=0
@@ -262,53 +186,6 @@ replace querytag=1 if norevisitneed==1 & f1_1_1!=maxvisit
 querylister, checkpoint("18")
 
 //***********************
-// Checkpoint 19:
-keep if inlist(f1_1_4s,1,8,9) & f1_1_1==maxvisit & round==1
-bysort surveymethod clusterid: gen enrollbycluster=_N
-duplicates drop surveymethod clusterid, force
-tostring surveymethod, replace force
-replace surveymethod="EPI" if surveymethod=="1"
-replace surveymethod="CS" if surveymethod=="2"
-replace surveymethod="GIS" if surveymethod=="3"
-replace surveymethod="LQAS" if surveymethod=="4"
-mmerge surveymethod clusterid using "$tempdata\Consentcount1.dta", type(1:1) unmatched(master)
-replace f1_0=surveymethod + ";ClusterID=" + clusterid
-replace f1_1_1=0
-replace f1_1_3=.
-replace f1_1_4s=.
-replace Child_ID=""
-gen querytag=0
-replace querytag=1 if enrollbycluster!=consent1
-tostring enrollbycluster,replace
-tostring consent1, replace
-replace f1_1_2="Form1=" + enrollbycluster + ";consent1=" + consent1
-querylister, checkpoint("19")
-
-//***********************
-// Checkpoint 1901 & 1902:
-use "Entered_data\Processed_log_data\Consent list (without Round1).dta", clear
-replace consent1=trim(lower(consent1))
-replace consent2=trim(lower(consent2))
-replace consent1="" if consent1!="yes"
-replace consent2="" if consent2!="yes"
-sum Logdate
-local date_consentlog=r(max)
-collapse (firstnm) consent1 consent2, by(Child_ID)
-tempfile consentct
-	save `consentct'
-use "$tempdata\Form1&2_temp.dta", replace
-keep if f1_1_1==maxvisit
-gen datenum=date(f1_1_2,"DM20Y")
-keep if datenum<=`date_consentlog' | datenum==.
-mmerge Child_ID using `consentct', type(n:1) unmatched(both)
-gen querytag=0
-replace querytag=1 if consent1!="yes" & inlist(f1_1_4s,1,8,9) & round!=1
-querylister, checkpoint("1901")
-gen querytag=0
-replace querytag=1 if consent1=="yes" & !inlist(f1_1_4s,1,8,9)
-querylister, checkpoint("1902")
-
-//***********************
 // Checkpoint 28:
 use "$tempdata\Form1&2_temp.dta", clear
 gen querytag=0
@@ -320,13 +197,15 @@ querylister, checkpoint("28")
 // Checkpoint 31:
 use "$tempdata\Form1&2_temp.dta", clear
 keep f1_0 Child_ID f1_1_1 f1_1_2 maxvisit
+summarize maxvisit
+local maxmaxvisit=`r(max)'
 gen visitdate=date(f1_1_2,"DM20Y")
 reshape wide Child_ID visitdate f1_1_2, i(f1_0) j(f1_1_1)
 ren Child_ID1 Child_ID
 drop Child_ID?
 gen f1_1_1=.
 gen querytag=0
-forvalue i=2/5 {
+forvalue i=2/`maxmaxvisit' {
 	local j=`i'-1
 	replace f1_1_1=`i' if visitdate`i'<=visitdate`j' & `i'<=maxvisit
 	replace f1_1_2visit_datetime1=f1_1_2visit_datetime`i' if visitdate`i'<=visitdate`j' & `i'<=maxvisit
@@ -339,7 +218,7 @@ querylister, checkpoint("31")
 
 //***********************
 // Checkpoint 79:
-import excel using "Entered_data\Household & Child ID List from Form3.xlsx" ///
+import excel using "Program_running_log\Household & Child ID List from Form3.xlsx" ///
 			,clear firstrow allstring case(lower)
 drop f1_1_1 f1_1_3 f1_1_4s f1_1_2 f3_a0_1
 ren f3_a0_2 f1_1_6previous_child_id

@@ -1,7 +1,8 @@
 qui {
 /********************************************************
-* Last Modified:  03/01/16  by Wenfeng Gong
-* File Name:      C:\Google Drive\IVAC - Vaccination Coverage Survey\Data\Automated_Data_Monitoring_Cleaning\code\Data_correction_Form2.do
+* Last Modified:  11/14/18  by Wenfeng Gong
+* Project Name:   Near-time data inspection tool (template)
+* File Name:      Data_correction_Form2.do
 ********************************************************/
 
 capture log c
@@ -12,6 +13,7 @@ tempfile form2temp
 use "$tempdata\form2temp.dta", clear
 		save `form2temp', replace 
 
+//***** Read Form 2 change log ************
 import excel using "Data_change_log\Form2_change_log.xlsx",clear firstrow
 cap ren F1_0HOUSE_CODE f1_0house_code
 cap drop if f1_0=="" 
@@ -25,6 +27,7 @@ replace new=trim(new)
 replace delete=trim(delete)
 cap tostring change_made, force replace
 
+//***** Align variables in change log and dataset ************
 replace variable="f1_0house_code" if variable=="f1_0"
 replace variable="f2_2interviewdate" if variable=="f2_2"
 replace variable="f2_3interviewtime" if variable=="f2_3"
@@ -41,6 +44,7 @@ replace variable="f2_10caregiverchildrelation" if variable=="f2_10"
 replace variable="f2_10_2caregiverchildrelationoth" if variable=="f2_10_2"
 replace variable="f2_11comment" if variable=="f2_11"
 
+//***** Make changes according to change log ************
 forvalues i= 1/`=_N' {
 	local LOGID=ID[`i']
 	local HH_ID=f1_0house_code[`i']
@@ -82,22 +86,12 @@ export excel using "Data_change_log\Form2_change_log.xlsx",replace firstrow(varl
 
 use `form2temp',clear
 
-// delete testing ids
-drop if substr(f1_0,3,1)=="0" & substr(f1_0,9,1)=="0"
-
-// special changes that cannot be handled by the system
-drop if f1_0=="122-141-709" & datecreated=="02-02-16"
-replace f1_0="213-018-410" if f1_0=="213-018-409" & f2_2=="08-04-16" & f2_3=="12:40 PM"
+//***** Make special changes that cannot be handled by change log ************
 drop if f1_0=="111-007-405" & f2_4c==1
-drop if f1_0=="133-103-501" & f2_2=="15-03-16" & f2_4c==0
-drop if f1_0=="111-376-620" & f2_2=="26-02-16" & f2_7_1c=="2"
-drop if f1_0=="933-357-302" & f2_2=="28-12-16" 
 
+//***** Save edited Form 2 ************
 duplicates drop
-
 save "$tempdata\form2temp.dta", replace
-
-
 
 exit 
 

@@ -1,0 +1,18 @@
+***Data_query_generate***
+Checkpoint 1: Form 1&2
+Checkpoint 2: Form 1&2
+Checkpoint 6: Form 1&2
+Checkpoint 9: Form 1&2
+Checkpoint 18: Form 1&2
+Checkpoint 28: Form 1&2
+Checkpoint 35: Form 3
+Checkpoint 36: Form 3
+Checkpoint 43: Form 3
+Checkpoint 79: Form 1&2
+Checkpoint 94: Form 1&2
+
+end of do-file
+
+. do "code\Data_progress_report.do"
+
+. qui {

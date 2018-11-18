@@ -1,7 +1,8 @@
 qui {
 /********************************************************
-* Last Modified:  03/28/16  by Wenfeng Gong
-* File Name:      C:\Google Drive\IVAC - Vaccination Coverage Survey\Data\Automated_Data_Monitoring_Cleaning\code\Data_query_logging_Form1.do
+* Last Modified:  11/14/18  by Wenfeng Gong
+* Project Name:   Near-time data inspection tool (template)
+* File Name:      Data_query_logging.do 
 ********************************************************/
 capture log c
 log using "Program_running_log\Data_query_logging.log", replace
@@ -9,6 +10,7 @@ noi di "***Data_query_logging****"
 
 //reflect previously Cancelled query
 use "Data_query\Query_history\querylist.dta", clear
+replace Date="." if Date==""
 mmerge checkpoint HH_ID Child_ID Visit_Num Date using "Data_query\Query_history\Query_history_Force-cancelled.dta", type(1:1) unmatched(both) update replace
 drop if Status=="Force-cancelled"
 save,replace
@@ -19,6 +21,13 @@ ren Status Status
 keep checkpoint HH_ID Child_ID Visit_Num Date FW_ID Status Responsible Comment
 destring Visit_Num, replace
 destring checkpoint, replace
+cap tostring Child_ID, replace
+cap tostring Date, replace
+cap tostring Status, replace
+cap tostring HH_ID, replace
+cap tostring Responsible, replace
+cap tostring Comment, replace
+cap tostring FW_ID, replace
 replace Child_ID="." if Child_ID==""
 replace Date="." if Date==""
 tempfile resposelog

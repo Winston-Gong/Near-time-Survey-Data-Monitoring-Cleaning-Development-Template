@@ -1,7 +1,8 @@
 qui {
 /********************************************************
-* Last Modified:  02/02/16  by Wenfeng Gong
-* File Name:      C:\Google Drive\IVAC - Vaccination Coverage Survey\Data\Automated_Data_Monitoring_Cleaning\code\Data_cleaning_Form1.do
+* Last Modified:  11/14/18  by Wenfeng Gong
+* Project Name:   Near-time data inspection tool (template)
+* File Name:      Data_cleaning_Form1.do
 ********************************************************/
 
 capture log c
@@ -78,66 +79,6 @@ gen visitdate=date(f1_1_2,"DM20Y")
 save "$cleandata\Form1_clean.dta",replace
 copy "$cleandata\Form1_clean.dta" "$backupdata\Form1_clean_backup_$S_DATE.csv", replace
 
-************** create spreadsheet for translation of comments *************
 
-use "$cleandata\Form1_clean.dta",clear
-ds f1_1_4_2status_other refusal_reason_other f1_6comment
-tempfile tempf
-foreach i of var `r(varlist)' {
-	preserve
-		keep f1_0house_code f1_1_1 `i'
-		gen  variable="`i'"
-		gen new=""
-		ren `i' original
-		drop if trim(lower(original))=="" | trim(lower(original))=="null"
-		cap append using `tempf'
-		save `tempf',replace
-	restore
-}
-use `tempf',clear
-sort original
-gen ID=_n
-order ID f1_0house_code f1_1_1 variable original new
-
-save `tempf',replace
-local filelist: dir "Entered_data\" files "Comment_Translation_Form1_*.xlsx", respectcase
-foreach filenam of local filelist {
-	import excel using "Entered_data/`filenam'",clear firstrow
-	drop if variable==""
-	mmerge f1_0house_code f1_1_1 variable using `tempf', type(1:n) unmatched(using)
-	drop if _merge==3
-	save `tempf',replace
-}
-use `tempf',clear
-
-cap export excel using "Entered_data\Comment_Translation_Form1.xlsx",replace firstrow(variables)
-
-************** incorporate spreadsheet for translation of comments *************
-tempfile tempf2
-local filelist: dir "Entered_data\" files "Comment_Translation_Form1_*.xlsx", respectcase
-foreach filenam of local filelist {
-	import excel using "Entered_data/`filenam'",clear firstrow
-	drop if variable==""
-	drop ID
-	ren original o
-	ren new n
-	cap drop _merge
-	cap tostring n, replace
-	replace n="" if trim(n)=="."
-	reshape wide o n, i(f1_0house_code f1_1_1) j(variable) string 
-	save `tempf2',replace
-	use "$cleandata\Form1_clean.dta",clear
-	mmerge f1_0house_code f1_1_1 using `tempf2', type(n:1) unmatched(master) update replace
-	
-	ds f1_1_4_2status_other refusal_reason_other f1_6comment
-	foreach i of var `r(varlist)' {
-		cap gen `i'_old=""
-		cap order `i'_old, after(`i')
-		cap replace `i'_old=o`i' if o`i'==`i' & trim(n`i')!=""
-		cap replace `i'=n`i' if o`i'==`i' & trim(n`i')!=""
-		cap drop n`i' o`i'
-	}
-	save "$cleandata\Form1_clean.dta",replace
-}
 
 exit

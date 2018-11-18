@@ -1,7 +1,8 @@
 qui {
 /********************************************************
-* Last Modified:  03/01/16  by Wenfeng Gong
-* File Name:      C:\Google Drive\IVAC - Vaccination Coverage Survey\Data\Automated_Data_Monitoring_Cleaning\code\Data_progress_report.do
+* Last Modified:  11/14/18  by Wenfeng Gong
+* Project Name:   Near-time data inspection tool (template)
+* File Name:      Data_progress_report.do 
 ********************************************************/
 capture log c
 set linesize 200
@@ -81,43 +82,12 @@ use "$tempdata\Form1&2_temp.dta",clear
 
 save "$tempdata\Form1&2_tempreport.dta", replace
 
-// Progress cont.
-///////////////////////////
-noi di "# Summary of Blood Collection Outcomes #"
-	use "$cleandata\Form4_clean.dta",clear 
-	tab f4_b1_3,m
-	count if f4_a0_2==maxbloodtry
-	local PR11=r(N)
-	//tab f4_b1_3 f4_b3c if f4_a0_2====maxbloodtry,m
-	count if inlist(f4_b1_3,1) & f4_a0_2==maxbloodtry
-	local PR12=r(N)
-	count if !inlist(f4_b1_3,1) & inlist(f4_b3c,4,5,6,8,9,10) & f4_a0_2==maxbloodtry
-	local PR13=r(N)
-	count if inlist(f4_b1_3,4,5,10,11,12) & f4_a0_2==maxbloodtry
-	local PR14=r(N)
-	count if inlist(f4_b1_3,4,5) & f4_a0_2==maxbloodtry
-	count if inlist(f4_b1_3,6,7,9) & f4_a0_2==maxbloodtry
-	local PR15=r(N)
-	local PR16=round(`PR15'/`PR11',0.001)
-		di "`PR16'"
-	local ER2=`PR11'-`PR12'-`PR13'-`PR14'-`PR15'
-		di "`ER2'"
-	count if inlist(f4_b1_3,6,7) & f4_a0_2!=maxbloodtry
-	local PR17=r(N)
-	count if inlist(f4_b1_3,9) & f4_a0_2==maxbloodtry
-	local PR19=r(N)
-	sort f4_a1c f4_a0_2
-	by f4_a1c: gen maxtryresult=f4_b1_3[_N]
-	count if inlist(f4_b1_3,6,7,9,11) & f4_a0_2==maxbloodtry-1 & !inlist(maxtryresult,6,7,9,11)
-	local PR18=r(N)
-	local PR20=round(`PR18'/`PR17',0.001)
-
 ///////////////////////////
 noi di "# Analysis for Make-up Visits, i.e. revisit days #"
 	use "$tempdata\Form1&2_tempreport.dta",clear
-	drop f1_6comment f1_6comment_old f1_1_4_2status_other_old refusal_reason_other_old f1_3children_count_2orless date_created date_changed visitsummary screendone latitude longitude gps_source
+	drop f1_6comment f1_3children_count_2orless date_created visitsummary screendone 
 	reshape wide f1_1_2 f1_1_3 f1_1_4s f1_1_4_2status_other f1_1_5 f1_1_6 f1_4 refusal_reason_other f1_5 ///
-		childageindays eligible norevisitneed visitdate f1_2r changed_by gps_accuracy, i(f1_0) j(f1_1_1)
+		childageindays eligible norevisitneed visitdate f1_2r  , i(f1_0) j(f1_1_1)
 	gen revisitsum=0
 	lab define revisitsum ///
 		0 "Still need revisit" ///
@@ -146,40 +116,21 @@ noi di "# Analysis for Make-up Visits, i.e. revisit days #"
 	cap drop v18
 	cap drop dup
 	keep if revisitsum==0 
-	export excel using "Data_progress_report/HH_need_revisit.xls", replace firstrow(varlabels) datestring(%td_D-N-Y)
-	copy "Data_progress_report/HH_need_revisit.xls" "Data_progress_report/backup/HH_need_revisit_$S_DATE.xls", replace
+	cap export excel using "Data_progress_report/HH_need_revisit.xls", replace firstrow(varlabels) datestring(%td_D-N-Y)
+	cap copy "Data_progress_report/HH_need_revisit.xls" "Data_progress_report/backup/HH_need_revisit_$S_DATE.xls", replace
 
-///////////////////////////
-noi di "# Analysis for Make-up Antibody Assessment Visits #"
-	
-	
 	
 ///////////////////////////
 noi di "# check number of enrollments per method per cluster (including makeup visits)#"
 	use "$tempdata\Form1&2_tempreport.dta",clear
 	keep if inlist(f1_1_4s,1,8,9,11) & f1_1_1==maxvisit
 	drop if f1_1_4s==11 & f1_1_6=="99999"
-	//duplicates list f1_0
 	bysort surveymethod clusterid: gen enrollbycluster=_N
 	duplicates drop surveymethod clusterid enrollbycluster, force
 	lab var enrollbycluster "Num of enrolls in each cluster"
 	noi tab enrollbycluster surveymethod,m
 	keep surveymethod clusterid enrollbycluster round
 	export excel using "Data_progress_report/Cluster_enrollment_summary (including makeup visits).xls", replace firstrow(varlabels)
-/* **** skep this part in normal run, because this part does not run in the Desktop
-	preserve
-		keep if surveymethod==1
-		export delimited using "Data_progress_report/Graph/Cluster_enrollment_summary_EPI (including makeup visits).csv", replace 
-	restore
-	preserve
-		keep if surveymethod==3
-		export delimited using "Data_progress_report/Graph/Cluster_enrollment_summary_GIS (including makeup visits).csv", replace 
-	restore
-	preserve
-		keep if surveymethod==2
-		export delimited using "Data_progress_report/Graph/Cluster_enrollment_summary_CS (including makeup visits).csv", replace 
-	restore
-*/
 
 noi di "# check number of enrollments per method per cluster (excluding makeup visits)#"
 	use "$tempdata\Form1&2_tempreport.dta",clear
@@ -220,28 +171,8 @@ noi di "# data collection progress curve #"
 	//export for graphing using tableau
 	keep f1_0 Child_ID f1_1_1v f1_1_3 f1_1_2 f1_1_4s round visitdate interviewdate surveymethod f2_2
 	gen enrolled=1 if inlist(f1_1_4s,1,8,9)
-	export excel using "Data_progress_report/Graph/Study_progress_graph.xls", replace firstrow(variables)
+	export excel using "Data_progress_report/Data for progress curve graph/Study_progress_graph.xls", replace firstrow(variables)
 	
-///////////////////////////
-noi di "# How many HHs does GIS need to visit to have 7 enrollment #"
-	use "$tempdata\Form1&2_tempreport.dta",clear
-	keep if f1_1_1==1
-	keep if surveymethod==3
-	bysort clusterid: gen fistvisitHHincluster=_N
-	duplicates drop clusterid, force
-	noi sum fistvisitHHincluster
-noi di "# How many HHs does GIS enroll in first visit #"
-	use "$tempdata\Form1&2_tempreport.dta",clear
-	keep if f1_1_1==1
-	keep if surveymethod==3
-	bysort clusterid: gen fistvisitHHincluster=_N
-	keep if inlist(f1_1_4s,1,8,9,10,11)
-	bysort clusterid: gen fistvisitenroll=_N
-	duplicates drop clusterid, force
-	noi tab fistvisitenroll
-	tab clusterid if fistvisitenroll<7
-	tab fistvisitHHincluster if fistvisitenroll<7
-
 	
 ///////////////////////////
 noi di "# Analysis of query items #"
@@ -281,15 +212,6 @@ noi di "* Caregiver absent or interview postponed after screening: `PR7'"
 noi di "* Refused to participate or postoned w/o reschedule, confirmed eligible: `PR8'"
 noi di "* HH/children enrolled: `PR9'"
 noi di "* Survey completed: `PR10'" 
-noi di "* Randomized for biomarker assessment: `PR11'" 
-noi di "* Successful blood collection: `PR12'" 
-noi di "* Insufficient blood collected: `PR13'" 
-noi di "* Postponed, no blood collected: `PR14'" 
-noi di "* Refused, no blood collected: `PR15'" 
-noi di "* Refusal ratio: `PR16'" 
-noi di "* Refusal revisited: `PR17'" 
-noi di "* Refusal averted after revisit: `PR18' (retio: `PR20')" 
-noi di "* Refusal confirmed as complete refusal (no retry): `PR19'" 
 
 noi di "* Warning: households have missing screening data but are requested for enrollment: `ER1'"
 noi di "* Warning: Uncategorized antibody assessment visit outcome: `ER2'"

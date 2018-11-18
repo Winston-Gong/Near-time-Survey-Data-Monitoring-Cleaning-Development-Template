@@ -1,7 +1,8 @@
 qui {
 /********************************************************
-* Last Modified:  03/28/16  by Wenfeng Gong
-* File Name:      C:\Google Drive\IVAC - Vaccination Coverage Survey\Data\Automated_Data_Monitoring_Cleaning\code\Data_query_generate_Form1.do
+* Last Modified:  11/14/18  by Wenfeng Gong
+* Project Name:   Near-time data inspection tool (template)
+* File Name:      Data_query_generate.do 
 ********************************************************/
 capture log c
 log using "Program_running_log\Data_query_generate.log", replace
