@@ -1,4 +1,5 @@
 # Near-time-Survey-Data-Monitoring-Cleaning-Development-Template
+## by Wenfeng Gong
 NOW-QUAL: Vaccine coverage survey Near-time Data Monitoring and Cleaning standard development template
 Household surveys are an essential tool for vaccine coverage monitoring in developing countries. Quality
 assurance during field data collection is a prerequisite for accurate survey results. However, due to 
